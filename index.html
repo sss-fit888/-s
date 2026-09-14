@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>カロリー & PFC計算ツール</title>
+    <style>
+        :root {
+            --primary-color: #ff6b6b;
+            --primary-gradient: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%);
+            --bg-color: #f7f9fc;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --text-sub: #666666;
+            --border-color: #e2e8f0;
+            --accent-light: #fff0f3;
+            
+            /* PFC Theme Colors */
+            --p-color: #ef4444;
+            --p-bg: #fef2f2;
+            --f-color: #f59e0b;
+            --f-bg: #fffbe0;
+            --c-color: #10b981;
+            --c-bg: #ecfdf5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px 15px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+
+        .header {
+            background: var(--primary-gradient);
+            color: white;
+            text-align: center;
+            padding: 25px 20px;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 13px;
+            opacity: 0.95;
+        }
+
+        .content {
+            padding: 25px 20px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--text-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: bold;
+            color: var(--text-sub);
+            margin-bottom: 8px;
+        }
+
+        .gender-select {
+            display: flex;
+            gap: 10px;
+        }
+
+        .gender-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            background: white;
+            color: var(--text-sub);
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .gender-btn.active {
+            border-color: var(--primary-color);
+            background: var(--accent-light);
+            color: var(--primary-color);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        input[type="number"], select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.2s ease;
+            background: white;
+            appearance: none;
+        }
+
+        input[type="number"]:focus, select:focus {
+            border-color: var(--primary-color);
+        }
+
+        .unit {
+            position: absolute;
+            right: 15px;
+            color: var(--text-sub);
+            font-size: 14px;
+            pointer-events: none;
+        }
+
+        .calc-btn {
+            width: 100%;
+            padding: 15px;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+            transition: transform 0.1s ease, box-shadow 0.2s ease;
+            margin-top: 10px;
+        }
+
+        .calc-btn:active {
+            transform: scale(0.98);
+        }
+
+        .error-message {
+            display: none;
+            background-color: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .result-container {
+            margin-top: 30px;
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-card {
+            background: #fdfbf7;
+            border: 2px solid #f0e6d2;
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 25px;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px dashed #e0d8c3;
+        }
+
+        .result-row:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            font-size: 14px;
+            color: var(--text-sub);
+        }
+
+        .result-val {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .result-val span {
+            font-size: 13px;
+            font-weight: normal;
+        }
+
+        .purpose-card {
+            background: white;
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            border-left: 5px solid var(--border-color);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .purpose-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+
+        .purpose-card.diet { border-left-color: #3b82f6; }
+        .purpose-card.keep { border-left-color: #10b981; }
+        .purpose-card.bulk { border-left-color: #f59e0b; }
+
+        .purpose-title {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 3px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .purpose-val {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .purpose-desc {
+            font-size: 11px;
+            color: var(--text-sub);
+            margin-top: 2px;
+        }
+
+        /* PFC Section Styles */
+        .pfc-box {
+            background: #ffffff;
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 15px;
+            margin-bottom: 25px;
+        }
+
+        .target-input-box {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .pfc-progress-container {
+            height: 18px;
+            background: #e2e8f0;
+            border-radius: 999px;
+            display: flex;
+            overflow: hidden;
+            margin: 15px 0 20px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .pfc-bar {
+            height: 100%;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .pfc-bar.p { background-color: var(--p-color); }
+        .pfc-bar.f { background-color: var(--f-color); }
+        .pfc-bar.c { background-color: var(--c-color); }
+
+        .pfc-cards-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .pfc-item-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            border-radius: 12px;
+            border-left: 5px solid;
+        }
+
+        .pfc-item-card.p { background: var(--p-bg); border-left-color: var(--p-color); }
+        .pfc-item-card.f { background: var(--f-bg); border-left-color: var(--f-color); }
+        .pfc-item-card.c { background: var(--c-bg); border-left-color: var(--c-color); }
+
+        .pfc-item-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pfc-item-name {
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pfc-item-sub {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        .pfc-item-value {
+            text-align: right;
+        }
+
+        .pfc-gram {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .pfc-kcal-pct {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        /* Info Explanation Accordion/Card */
+        .info-card {
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 18px;
+            margin-top: 20px;
+        }
+
+        .info-header {
+            font-size: 15px;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .info-content {
+            font-size: 13px;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        .info-list {
+            margin-top: 10px;
+            padding-left: 0;
+            list-style: none;
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .info-list li {
+            font-size: 12px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .info-list li:last-child {
+            margin-bottom: 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+        }
+        .badge.p { background: var(--p-color); }
+        .badge.f { background: var(--f-color); }
+        .badge.c { background: var(--c-color); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>🔥 カロリー & PFC計算ツール</h1>
+        <p>基礎代謝・適正カロリーと理想のPFCバランスを算出</p>
+    </div>
+
+    <div class="content">
+        <div class="section-title">👤 基本情報を入力</div>
+
+        <div class="form-group">
+            <label>性別</label>
+            <div class="gender-select">
+                <button type="button" class="gender-btn active" id="btn-male" onclick="setGender('male')">男性</button>
+                <button type="button" class="gender-btn" id="btn-female" onclick="setGender('female')">女性</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="age">年齢</label>
+            <div class="input-wrapper">
+                <input type="number" id="age" value="25" min="1" max="120">
+                <span class="unit">歳</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="height">身長</label>
+            <div class="input-wrapper">
+                <input type="number" id="height" value="170" min="50" max="250">
+                <span class="unit">cm</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="weight">体重</label>
+            <div class="input-wrapper">
+                <input type="number" id="weight" value="65" min="20" max="300" oninput="onWeightChange()">
+                <span class="unit">kg</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="activity">1日の活動量</label>
+            <select id="activity">
+                <option value="1.2">ほぼ運動しない（デスクワーク中心）</option>
+                <option value="1.375" selected>軽い運動（週に1〜2回程度）</option>
+                <option value="1.55">中程度の運動（週に3〜5回程度）</option>
+                <option value="1.725">激しい運動（週に6〜7回程度）</option>
+                <option value="1.9">非常によく動く（肉体労働・アスリート）</option>
+            </select>
+        </div>
+
+        <button class="calc-btn" onclick="calculate()">計算する</button>
+        <div class="error-message" id="error-msg">すべての項目を正しく入力してください。</div>
+
+        <div class="result-container" id="results">
+            <div class="section-title">📊 計算結果</div>
+
+            <div class="result-card">
+                <div class="result-row">
+                    <span class="result-label">基礎代謝量 (BMR)</span>
+                    <span class="result-val" id="bmr-val">0 <span>kcal</span></span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">総消費カロリー (TDEE)</span>
+                    <span class="result-val" id="tdee-val">0 <span>kcal</span></span>
+                </div>
+            </div>
+
+            <div class="section-title">🎯 目的別の目標摂取カロリー目安</div>
+
+            <div class="purpose-card diet" onclick="applyPresetCalorie('diet')">
+                <div class="purpose-title">
+                    <span>減量（ダイエット） <span style="font-weight:normal; font-size:11px; opacity:0.8;">[タップでPFCに反映]</span></span>
+                    <span style="color: #3b82f6;">-300〜500 kcal</span>
+                </div>
+                <div class="purpose-val" id="diet-val">0 kcal</div>
+                <div class="purpose-desc">体脂肪を健康的に落とす目安カロリー</div>
+            </div>
+
+            <div class="purpose-card keep" onclick="applyPresetCalorie('keep')">
+                <div class="purpose-title">
+                    <span>体重維持 <span style="font-weight:normal; font-size:11px; opacity:0.8;">[タップでPFCに反映]</span></span>
+                    <span style="color: #10b981;">±0 kcal</span>
+                </div>
+                <div class="purpose-val" id="keep-val">0 kcal</div>
+                <div class="purpose-desc">現在の体重をキープする目安カロリー</div>
+            </div>
+
+            <div class="purpose-card bulk" onclick="applyPresetCalorie('bulk')">
+                <div class="purpose-title">
+                    <span>増量（バルクアップ） <span style="font-weight:normal; font-size:11px; opacity:0.8;">[タップでPFCに反映]</span></span>
+                    <span style="color: #f59e0b;">+300〜500 kcal</span>
+                </div>
+                <div class="purpose-val" id="bulk-val">0 kcal</div>
+                <div class="purpose-desc">筋肉量を効率よく増やす目安カロリー</div>
+            </div>
+
+            <div class="section-title" style="margin-top: 25px;">🥗 理想のPFCバランス</div>
+
+            <div class="pfc-box">
+                <div class="target-input-box">
+                    <label for="target-calorie">1日の目標 / 指定摂取カロリー</label>
+                    <div class="input-wrapper">
+                        <input type="number" id="target-calorie" value="1800" min="500" max="10000" oninput="calculatePFC()">
+                        <span class="unit">kcal</span>
+                    </div>
+                    <p style="font-size: 11px; color: var(--text-sub); margin-top: 6px;">
+                        ※ 数値を直接変更するか、上の目的別カードをタップして切り替えられます。
+                    </p>
+                </div>
+
+                <!-- PFC Visual Progress Bar -->
+                <div class="pfc-progress-container">
+                    <div class="pfc-bar p" id="bar-p" style="width: 30%;"></div>
+                    <div class="pfc-bar f" id="bar-f" style="width: 20%;"></div>
+                    <div class="pfc-bar c" id="bar-c" style="width: 50%;"></div>
+                </div>
+
+                <!-- PFC Detailed Cards -->
+                <div class="pfc-cards-grid">
+                    <!-- Protein -->
+                    <div class="pfc-item-card p">
+                        <div class="pfc-item-info">
+                            <span class="pfc-item-name"><span class="badge p">P</span> たんぱく質</span>
+                            <span class="pfc-item-sub" id="p-formula">体重 × 2.0g (4kcal/g)</span>
+                        </div>
+                        <div class="pfc-item-value">
+                            <div class="pfc-gram" id="p-gram">0 g</div>
+                            <div class="pfc-kcal-pct" id="p-detail">0 kcal (0%)</div>
+                        </div>
+                    </div>
+
+                    <!-- Fat -->
+                    <div class="pfc-item-card f">
+                        <div class="pfc-item-info">
+                            <span class="pfc-item-name"><span class="badge f">F</span> 脂質</span>
+                            <span class="pfc-item-sub">摂取カロリーの 20% (9kcal/g)</span>
+                        </div>
+                        <div class="pfc-item-value">
+                            <div class="pfc-gram" id="f-gram">0 g</div>
+                            <div class="pfc-kcal-pct" id="f-detail">0 kcal (20%)</div>
+                        </div>
+                    </div>
+
+                    <!-- Carbohydrate -->
+                    <div class="pfc-item-card c">
+                        <div class="pfc-item-info">
+                            <span class="pfc-item-name"><span class="badge c">C</span> 炭水化物</span>
+                            <span class="pfc-item-sub">残りのカロリー (4kcal/g)</span>
+                        </div>
+                        <div class="pfc-item-value">
+                            <div class="pfc-gram" id="c-gram">0 g</div>
+                            <div class="pfc-kcal-pct" id="c-detail">0 kcal (0%)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div class="info-header">
+                    💡 ④ PFCバランスとは
+                </div>
+                <div class="info-content">
+                    <p>
+                        PFCとは、三大栄養素である<b>P＝たんぱく質（Protein）・F＝脂質（Fat）・C＝炭水化物（Carbohydrate）</b>のことです。同じ摂取カロリーでも、この3つの比率が整っているかどうかで、筋肉を守りながら脂肪を落とせるかどうかが変わります。1gあたりのカロリーは、<b>たんぱく質4kcal・脂質9kcal・炭水化物4kcal</b>です。
+                    </p>
+                    <p style="margin-top: 8px;">
+                        このツールは、健康的な減量に向いた次の配分でPFCを計算します：
+                    </p>
+                    <ul class="info-list">
+                        <li><span class="badge p">P</span> <b>たんぱく質（P）</b> … 体重×2g（女性は体重×1.5g）</li>
+                        <li><span class="badge f">F</span> <b>脂質（F）</b> … 摂取カロリーの20%</li>
+                        <li><span class="badge c">C</span> <b>炭水化物（C）</b> … 残りのカロリー</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedGender = 'male';
+
+    // Store calculated target calories for preset buttons
+    let calculatedPresets = {
+        diet: 1800,
+        keep: 2200,
+        bulk: 2500
+    };
+
+    function setGender(gender) {
+        selectedGender = gender;
+        const btnMale = document.getElementById('btn-male');
+        const btnFemale = document.getElementById('btn-female');
+        
+        if (gender === 'male') {
+            btnMale.classList.add('active');
+            btnFemale.classList.remove('active');
+        } else {
+            btnFemale.classList.add('active');
+            btnMale.classList.remove('active');
+        }
+
+        // Re-calculate PFC if results are visible
+        if (document.getElementById('results').style.display === 'block') {
+            calculatePFC();
+        }
+    }
+
+    function onWeightChange() {
+        if (document.getElementById('results').style.display === 'block') {
+            calculatePFC();
+        }
+    }
+
+    function calculate() {
+        const age = parseFloat(document.getElementById('age').value);
+        const height = parseFloat(document.getElementById('height').value);
+        const weight = parseFloat(document.getElementById('weight').value);
+        const activity = parseFloat(document.getElementById('activity').value);
+        const errorMsg = document.getElementById('error-msg');
+
+        if (!age || !height || !weight || age <= 0 || height <= 0 || weight <= 0) {
+            errorMsg.style.display = 'block';
+            return;
+        }
+        errorMsg.style.display = 'none';
+
+        // Roza & Shizgal (1984) Formula for BMR
+        let bmr = 0;
+        if (selectedGender === 'male') {
+            bmr = (13.397 * weight) + (4.799 * height) - (5.677 * age) + 88.362;
+        } else {
+            bmr = (9.247 * weight) + (3.098 * height) - (4.330 * age) + 447.593;
+        }
+
+        bmr = Math.round(bmr);
+        const tdee = Math.round(bmr * activity);
+
+        document.getElementById('bmr-val').innerHTML = `${bmr.toLocaleString()} <span>kcal</span>`;
+        document.getElementById('tdee-val').innerHTML = `${tdee.toLocaleString()} <span>kcal</span>`;
+
+        const dietAvg = Math.round(tdee - 400); // Default target calorie for diet
+        const dietMin = Math.round(tdee - 500);
+        const dietMax = Math.round(tdee - 300);
+        const bulkMin = Math.round(tdee + 300);
+        const bulkMax = Math.round(tdee + 500);
+        const bulkAvg = Math.round(tdee + 400);
+
+        // Store presets
+        calculatedPresets.diet = dietAvg;
+        calculatedPresets.keep = tdee;
+        calculatedPresets.bulk = bulkAvg;
+
+        document.getElementById('diet-val').innerText = `${dietMin.toLocaleString()} 〜 ${dietMax.toLocaleString()} kcal`;
+        document.getElementById('keep-val').innerText = `${tdee.toLocaleString()} kcal`;
+        document.getElementById('bulk-val').innerText = `${bulkMin.toLocaleString()} 〜 ${bulkMax.toLocaleString()} kcal`;
+
+        // Automatically set target calorie to diet calorie default
+        document.getElementById('target-calorie').value = dietAvg;
+
+        // Display results block
+        document.getElementById('results').style.display = 'block';
+
+        // Calculate PFC
+        calculatePFC();
+
+        // Smooth scroll
+        document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function applyPresetCalorie(type) {
+        if (calculatedPresets[type]) {
+            document.getElementById('target-calorie').value = calculatedPresets[type];
+            calculatePFC();
+        }
+    }
+
+    function calculatePFC() {
+        const weight = parseFloat(document.getElementById('weight').value) || 0;
+        const targetCal = parseFloat(document.getElementById('target-calorie').value) || 0;
+
+        if (weight <= 0 || targetCal <= 0) {
+            return;
+        }
+
+        // 1. Protein (P) Calculation: Male = Weight * 2.0g, Female = Weight * 1.5g
+        const pMultiplier = selectedGender === 'male' ? 2.0 : 1.5;
+        document.getElementById('p-formula').innerText = `体重 × ${pMultiplier}g (4kcal/g)`;
+
+        const pGram = Math.round(weight * pMultiplier);
+        const pKcal = Math.round(pGram * 4);
+
+        // 2. Fat (F) Calculation: 20% of Target Calories
+        const fKcal = Math.round(targetCal * 0.20);
+        const fGram = Math.round(fKcal / 9);
+
+        // 3. Carbohydrate (C) Calculation: Remaining Calories
+        let cKcal = targetCal - (pKcal + fKcal);
+        if (cKcal < 0) cKcal = 0; // Guard for low calorie settings
+        const cGram = Math.round(cKcal / 4);
+
+        // 4. Calculate Percentage (%)
+        const pPct = Math.min(100, Math.round((pKcal / targetCal) * 100));
+        const fPct = Math.min(100 - pPct, Math.round((fKcal / targetCal) * 100));
+        const cPct = Math.max(0, 100 - pPct - fPct);
+
+        // Update Text Elements
+        document.getElementById('p-gram').innerText = `${pGram} g`;
+        document.getElementById('p-detail').innerText = `${pKcal.toLocaleString()} kcal (${pPct}%)`;
+
+        document.getElementById('f-gram').innerText = `${fGram} g`;
+        document.getElementById('f-detail').innerText = `${fKcal.toLocaleString()} kcal (${fPct}%)`;
+
+        document.getElementById('c-gram').innerText = `${cGram} g`;
+        document.getElementById('c-detail').innerText = `${cKcal.toLocaleString()} kcal (${cPct}%)`;
+
+        // Update Visual Progress Bar
+        document.getElementById('bar-p').style.width = `${pPct}%`;
+        document.getElementById('bar-f').style.width = `${fPct}%`;
+        document.getElementById('bar-c').style.width = `${cPct}%`;
+    }
+</script>
+
+</body>
+</html>
